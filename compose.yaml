@@ -1,0 +1,25 @@
+services:
+  game-server:
+    build:
+      context: .
+      args:
+        STEAM_USER: "steam"
+        STEAM_HOME: "/home/steam"
+        STEAM_USER_UID: "1000"
+        STEAM_USER_GID: "1000"
+        STEAMCMD_DIR: "/home/steam/steamcmd"
+        STEAM_APP_DIR: "/home/steam/server"
+        PROTON_VERSION: "GE-Proton10-26"
+
+    image: game-server:latest
+    container_name: game-server
+    user: "1000:1000"
+    ports:
+      - "YOUR_GAME_PORT:YOUR_GAME_PORT/udp" # Replace with your game's port(s)
+      # - "ANOTHER_PORT:ANOTHER_PORT/udp"   # Add more ports as needed
+    environment:
+      - STEAM_APP_ID=YOUR_STEAM_APP_ID           # Replace with your game's Steam App ID
+      - GAME_EXECUTABLE=YOUR_GAME_EXECUTABLE.exe # Replace with your game's executable
+      # - GAME_ARGS=                             # Optional: Add game arguments if needed
+    volumes:
+      - ./game_data:/home/steam/server
