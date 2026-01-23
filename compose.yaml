@@ -9,7 +9,7 @@ services:
         STEAM_USER_GID: "1000"
         STEAMCMD_DIR: "/home/steam/steamcmd"
         STEAM_APP_DIR: "/home/steam/server"
-        PROTON_VERSION: "GE-Proton10-26"
+        PROTON_VERSION: "GE-Proton10-28"
 
     image: game-server:latest
     container_name: game-server

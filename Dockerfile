@@ -13,18 +13,21 @@ ARG STEAM_USER_GID=1000
 ARG STEAMCMD_DIR="${STEAM_HOME}/steamcmd"
 ARG STEAM_APP_DIR="${STEAM_HOME}/server"
 ARG PROTON_DIR="${STEAM_HOME}/proton"
-ARG PROTON_VERSION="GE-Proton10-26"
+ARG PROTON_VERSION="GE-Proton10-28"
 
 # Runtime environment variables derived from build args
 ENV STEAM_USER=${STEAM_USER}
 ENV STEAM_HOME=${STEAM_HOME}
 ENV STEAMCMD_DIR=${STEAMCMD_DIR}
 ENV STEAM_APP_DIR=${STEAM_APP_DIR}
+
 # URL for downloading the chosen GE-Proton release
 ENV PROTON_URL="https://github.com/GloriousEggroll/proton-ge-custom/releases/download/${PROTON_VERSION}/${PROTON_VERSION}.tar.gz"
 ENV PROTON_VERSION=${PROTON_VERSION}
 ENV PROTON_DIR=${PROTON_DIR}
 ENV PROTON_EXECUTABLE_PATH="${PROTON_DIR}/proton"
+
+# Set locale environment variables
 ENV LANG=en_US.UTF-8
 ENV LC_ALL=en_US.UTF-8
 
@@ -35,6 +38,8 @@ RUN dpkg --add-architecture i386 \
         curl \
         tar \
         python3 \
+        adduser \
+        perl \
         xvfb \
         lib32gcc-s1 \
         lib32stdc++6 \
@@ -48,20 +53,12 @@ RUN dpkg --add-architecture i386 \
     # Cleanup apt lists to reduce image size
     && rm -rf /var/lib/apt/lists/*
 
-# Create or replace a system user for Steam to avoid running as root.
-# Handles existing users/groups with conflicting UID/GID by removing them first.
-RUN set -eux; \
-    if id -u "${STEAM_USER}" >/dev/null 2>&1; then userdel -r "${STEAM_USER}"; fi; \
-    if getent passwd "${STEAM_USER_UID}" >/dev/null; then \
-        old_user=$(getent passwd "${STEAM_USER_UID}" | cut -d: -f1); \
-        userdel -r "${old_user}"; \
-    fi; \
-    if getent group "${STEAM_USER_GID}" >/dev/null; then \
-        old_group=$(getent group "${STEAM_USER_GID}" | cut -d: -f1); \
-        groupdel "${old_group}"; \
-    fi; \
-    groupadd -g ${STEAM_USER_GID} ${STEAM_USER}; \
-    useradd -m -d ${STEAM_HOME} -s /bin/bash -u ${STEAM_USER_UID} -g ${STEAM_USER_GID} ${STEAM_USER}
+# Remove default ubuntu user to avoid conflicts
+RUN deluser --remove-home ubuntu
+
+# Create the unprivileged steam user and group with specified UID/GID
+RUN groupadd -g ${STEAM_USER_GID} ${STEAM_USER} \
+    && useradd -m -u ${STEAM_USER_UID} -g ${STEAM_USER_GID} -s /bin/bash ${STEAM_USER}
 
 # Ensure a stable machine id is present (some Proton/Steam behavior requires it)
 RUN rm -f /etc/machine-id \
@@ -104,4 +101,4 @@ COPY --chown=${STEAM_USER}:${STEAM_USER} entrypoint.sh ${STEAM_HOME}/entrypoint.
 RUN chmod +x ${STEAM_HOME}/entrypoint.sh
 
 # Run the entrypoint via bash to allow shell features in the script
-ENTRYPOINT ["/bin/bash", "-c", "${STEAM_HOME}/entrypoint.sh"]
+ENTRYPOINT ["/home/steam/entrypoint.sh"]

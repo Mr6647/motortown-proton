@@ -49,5 +49,5 @@ export STEAM_COMPAT_DATA_PATH="${STEAMCMD_DIR}/compatdata/${STEAM_APP_ID}"
 # Ensure compatibility data directory exists
 mkdir -p "${STEAM_COMPAT_DATA_PATH}"
 
-# Run the game via Proton; Proton stays alive until the game exits
-"${PROTON_EXECUTABLE_PATH}" waitforexitandrun "${STEAM_APP_DIR}/${GAME_EXECUTABLE}" ${GAME_ARGS}
+# Use exec with the program and its arguments split so the shell is replaced correctly.
+exec "${PROTON_EXECUTABLE_PATH}" waitforexitandrun "${STEAM_APP_DIR}/${GAME_EXECUTABLE}" ${GAME_ARGS}
