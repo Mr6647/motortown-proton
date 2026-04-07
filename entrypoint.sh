@@ -80,6 +80,10 @@ sed -i \
     -e "s/{{WEB_API_PORT}}/${WEB_API_PORT}/g" \
     "${STEAM_APP_DIR}/MotorTown/game/motortown/cfg/DedicatedServerConfig.json"
 
+# Force-clean the password (bypasses any sed escaping issues)
+sed -i 's/"HostWebAPIServerPassword": ".*"/"HostWebAPIServerPassword": "test123"/' "${STEAM_APP_DIR}/MotorTown/game/motortown/cfg/DedicatedServerConfig.json"
+echo "DEBUG: Password forced to test123 for testing"
+
 # Custom config/mod bundle support
 if [[ -n "${MT_CFG_URL}" ]]; then
     echo "Downloading custom config pack from ${MT_CFG_URL}"
