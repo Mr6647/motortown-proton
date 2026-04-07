@@ -1,6 +1,7 @@
 FROM ubuntu:24.04
 
-LABEL maintainer="xiahualiu"
+LABEL maintainer="xiahualiu + community (Motor Town Proton port)"
+LABEL description="Motor Town: Behind The Wheel Dedicated Server (Proton GE)"
 
 # Non-interactive apt operations in Docker builds
 ENV DEBIAN_FRONTEND=noninteractive
@@ -99,8 +100,13 @@ RUN mkdir -p ${STEAM_APP_DIR} \
     && mkdir -p ${STEAM_HOME}/.config/protonfixes
 
 # Copy the entrypoint script into the image and make it executable
+# Copy Motor Town specific files (config template + hooks)
+COPY --chown=${STEAM_USER}:${STEAM_USER} etc/DedicatedServerConfig_Sample.json ${STEAM_HOME}/DedicatedServerConfig_Sample.json
+COPY --chown=${STEAM_USER}:${STEAM_USER} etc/pre.sh ${STEAM_HOME}/pre.sh
+COPY --chown=${STEAM_USER}:${STEAM_USER} etc/post.sh ${STEAM_HOME}/post.sh
 COPY --chown=${STEAM_USER}:${STEAM_USER} entrypoint.sh ${STEAM_HOME}/entrypoint.sh
-RUN chmod +x ${STEAM_HOME}/entrypoint.sh
+
+RUN chmod +x ${STEAM_HOME}/entrypoint.sh ${STEAM_HOME}/pre.sh ${STEAM_HOME}/post.sh
 
 # Run the entrypoint via bash to allow shell features in the script
 ENTRYPOINT ["/home/steam/entrypoint.sh"]
