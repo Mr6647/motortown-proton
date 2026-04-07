@@ -24,14 +24,14 @@ echo "=== Motor Town Dedicated Server (Proton GE) ==="
 : ${WEB_API_PORT:=8080}
 : ${MT_CFG_URL:=""}
 
-# === REQUIRED: Steam account credentials (account must own Motor Town) ===
+# === REQUIRED: Steam account credentials ===
 if [[ -z "${STEAM_USERNAME}" || -z "${STEAM_PASSWORD}" ]]; then
     echo "ERROR: STEAM_USERNAME and STEAM_PASSWORD environment variables are required."
     echo "       Your Steam account must own 'Motor Town: Behind The Wheel'."
     exit 1
 fi
 
-# Update game (beta branch beta is required for dedicated server)
+# Update game (beta test2)
 echo "--- Updating Motor Town Dedicated Server (beta test2) ---"
 VALIDATE_FLAG=$([ "${STEAMAPPVALIDATE}" = "1" ] && echo "validate" || echo "")
 ${STEAMCMD_DIR}/steamcmd.sh \
@@ -40,26 +40,12 @@ ${STEAMCMD_DIR}/steamcmd.sh \
     +app_update ${STEAMAPPID} -beta beta -betapassword motortowndedi ${VALIDATE_FLAG} \
     +quit
 
-# Create config folder and copy template
+# === CORRECT CONFIG LOCATION (root of server directory) ===
+echo "--- Generating DedicatedServerConfig.json in correct root location ---"
+mkdir -p "${STEAM_APP_DIR}"
+
 cp "${STEAM_HOME}/DedicatedServerConfig_Sample.json" "${STEAM_APP_DIR}/DedicatedServerConfig.json"
 
-# Install SLR and manually copy compatibility DLLs
-
-echo "--- Installing Steam Linux Runtime and copying compatibility DLLs ---"
-${STEAMCMD_DIR}/steamcmd.sh +force_install_dir "${STEAM_APP_DIR}" +login anonymous +app_update 1007 validate +quit
-
-mkdir -p "${STEAM_APP_DIR}/MotorTown/Binaries/Win64"
-for dll in steamclient.dll steamclient64.dll tier0_s.dll tier0_s64.dll vstdlib_s.dll vstdlib_s64.dll; do
-    src_so="${STEAMCMD_DIR}/linux32/${dll%.dll}.so"
-    if [ -f "$src_so" ]; then
-        cp "$src_so" "${STEAM_APP_DIR}/MotorTown/Binaries/Win64/${dll}"
-        echo "Copied ${dll}"
-    else
-        echo "Warning: Could not find ${dll} source"
-    fi
-done
-
-# Apply environment variables to config (same as original motortown image)
 sed -i \
     -e "s/{{SERVER_HOSTNAME}}/${SERVER_HOSTNAME}/g" \
     -e "s/{{SERVER_MESSAGE}}/${SERVER_MESSAGE}/g" \
@@ -77,14 +63,26 @@ sed -i \
     -e "s/{{ENABLE_WEB_API}}/${ENABLE_WEB_API}/g" \
     -e "s/{{WEB_API_PASSWORD}}/${WEB_API_PASSWORD}/g" \
     -e "s/{{WEB_API_PORT}}/${WEB_API_PORT}/g" \
-"${STEAM_APP_DIR}/DedicatedServerConfig.json"
+    "${STEAM_APP_DIR}/DedicatedServerConfig.json"
 
 echo "✓ Config written to correct location: ${STEAM_APP_DIR}/DedicatedServerConfig.json"
-# Force-clean the password (bypasses any sed escaping issues)
-sed -i 's/"HostWebAPIServerPassword": ".*"/"HostWebAPIServerPassword": "test123"/' "${STEAM_APP_DIR}/MotorTown/game/motortown/cfg/DedicatedServerConfig.json"
-echo "DEBUG: Password forced to test123 for testing"
 
-# Custom config/mod bundle support
+# Install Steam Linux Runtime and copy compatibility DLLs
+echo "--- Installing Steam Linux Runtime and copying compatibility DLLs ---"
+${STEAMCMD_DIR}/steamcmd.sh +force_install_dir "${STEAM_APP_DIR}" +login anonymous +app_update 1007 validate +quit
+
+mkdir -p "${STEAM_APP_DIR}/MotorTown/Binaries/Win64"
+for dll in steamclient.dll steamclient64.dll tier0_s.dll tier0_s64.dll vstdlib_s.dll vstdlib_s64.dll; do
+    src_so="${STEAMCMD_DIR}/linux32/${dll%.dll}.so"
+    if [ -f "$src_so" ]; then
+        cp "$src_so" "${STEAM_APP_DIR}/MotorTown/Binaries/Win64/${dll}"
+        echo "Copied ${dll}"
+    else
+        echo "Warning: Could not find ${dll} source"
+    fi
+done
+
+# Custom config bundle support
 if [[ -n "${MT_CFG_URL}" ]]; then
     echo "Downloading custom config pack from ${MT_CFG_URL}"
     TEMP_DIR=$(mktemp -d)
@@ -102,18 +100,16 @@ fi
 # Pre-hook
 source "${STEAM_HOME}/pre.sh"
 
-# Proton + server launch environment
+# Proton environment
 export STEAM_COMPAT_CLIENT_INSTALL_PATH="${STEAMCMD_DIR}"
 export STEAM_COMPAT_DATA_PATH="${STEAMCMD_DIR}/compatdata/${STEAMAPPID}"
 mkdir -p "${STEAM_COMPAT_DATA_PATH}"
 export SteamAppId=${STEAMAPPID}
 export LD_LIBRARY_PATH="${STEAM_APP_DIR}/linux64:${LD_LIBRARY_PATH}"
 
-# Logging
-echo "--- Starting real-time ServerLog forwarding to Docker stdout (visible in Dockge) ---"
+# Live logging
+echo "--- Starting real-time ServerLog forwarding to Docker stdout ---"
 mkdir -p "${STEAM_APP_DIR}/MotorTown/Saved/ServerLog"
-
-# Background tailer that forwards game logs to container stdout
 (
     echo "Waiting for Motor Town ServerLog files to appear..."
     while true; do
@@ -127,12 +123,13 @@ mkdir -p "${STEAM_APP_DIR}/MotorTown/Saved/ServerLog"
     done
 ) &
 
-echo "--- Launching Motor Town Dedicated Server (public visibility + live logs) ---"
+echo "--- Launching Motor Town Dedicated Server ---"
 cd "${STEAM_APP_DIR}"
 
 exec "${PROTON_EXECUTABLE_PATH}" waitforexitandrun \
     "${STEAM_APP_DIR}/MotorTown/Binaries/Win64/MotorTownServer-Win64-Shipping.exe" \
     Jeju_World?listen? -server -log -stdout -FullStdOut -NoExit -useperfthreads \
     -Port=7777 -QueryPort=27015 -multihome=0.0.0.0
-# Post-hook (only runs if server exits cleanly)
+
+# Post-hook
 source "${STEAM_HOME}/post.sh"
