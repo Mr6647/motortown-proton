@@ -44,6 +44,22 @@ ${STEAMCMD_DIR}/steamcmd.sh \
 mkdir -p "${STEAM_APP_DIR}/MotorTown/game/motortown/cfg"
 cp "${STEAM_HOME}/DedicatedServerConfig_Sample.json" "${STEAM_APP_DIR}/MotorTown/game/motortown/cfg/DedicatedServerConfig.json"
 
+# Install SLR and manually copy compatibility DLLs
+
+echo "--- Installing Steam Linux Runtime and copying compatibility DLLs (prevents immediate crash) ---"
+${STEAMCMD_DIR}/steamcmd.sh +force_install_dir "${STEAM_APP_DIR}" +login anonymous +app_update 1007 validate +quit
+
+mkdir -p "${STEAM_APP_DIR}/MotorTown/Binaries/Win64"
+for dll in steamclient.dll steamclient64.dll tier0_s.dll tier0_s64.dll vstdlib_s.dll vstdlib_s64.dll; do
+    src_so="${STEAMCMD_DIR}/linux32/${dll%.dll}.so"
+    if [ -f "$src_so" ]; then
+        cp "$src_so" "${STEAM_APP_DIR}/MotorTown/Binaries/Win64/${dll}"
+        echo "Copied ${dll}"
+    else
+        echo "Warning: Could not find ${dll} source"
+    fi
+done
+
 # Apply environment variables to config (same as original motortown image)
 sed -i \
     -e "s/{{SERVER_HOSTNAME}}/${SERVER_HOSTNAME}/g" \
