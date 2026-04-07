@@ -1,0 +1,19 @@
+{
+  "ServerName": "{{SERVER_HOSTNAME}}",
+  "ServerMessage": "{{SERVER_MESSAGE}}",
+  "Password": "{{SERVER_PASSWORD}}",
+  "MaxPlayers": {{MAX_PLAYERS}},
+  "MaxVehiclePerPlayer": {{MAX_PLAYER_VEHICLES}},
+  "bAllowPlayerToJoinWithCompanyVehicles": {{ALLOW_COMPANY_VEHCILES}},
+  "bAllowCompanyAIDriver": {{ALLOW_COMPANY_AI}},
+  "MaxHousingPlotRentalPerPlayer": {{MAX_HOUSING_RENTAL_PLOTS}},
+  "MaxHousingPlotRentalDays": {{MAX_HOUSING_RENTAL_DAYS}},
+  "HousingPlotRentalPriceRatio": {{HOUSING_RENTAL_PRICE_RATIO}},
+  "bAllowModdedVehicle": {{ALLOW_MODDED_VEHICLES}},
+  "NPCVehicleDensity": {{NPC_VEHICLE_DENSITY}},
+  "NPCPoliceDensity": {{NPC_POLICE_DENSITY}}, 
+  "bEnableHostWebAPIServer": {{ENABLE_WEB_API}},
+  "HostWebAPIServerPassword": "{{WEB_API_PASSWORD}}",
+  "HostWebAPIServerPort": {{WEB_API_PORT}},
+  "Admins": []
+}
