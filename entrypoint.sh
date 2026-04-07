@@ -106,18 +106,28 @@ export SteamAppId=${STEAMAPPID}
 export LD_LIBRARY_PATH="${STEAM_APP_DIR}/linux64:${LD_LIBRARY_PATH}"
 
 # Live log tailing
-echo "--- Preparing live log tail ---"
-mkdir -p "${STEAM_APP_DIR}/MotorTown/Saved/Logs"
+echo "--- Preparing live ServerLog tail ---"
+mkdir -p "${STEAM_APP_DIR}/MotorTown/Saved/ServerLog"
 
-# Start background tail of any log file the game creates
-( tail -f -n +1 "${STEAM_APP_DIR}/MotorTown/Saved/Logs/"*.log 2>/dev/null || true ) &
+(
+    echo "Waiting for ServerLog files..."
+    while true; do
+        LOGFILE=$(find "${STEAM_APP_DIR}/MotorTown/Saved/ServerLog" -name "*.log" -type f 2>/dev/null | head -n 1)
+        if [ -n "$LOGFILE" ]; then
+            echo "Tailing ServerLog: $LOGFILE"
+            tail -f "$LOGFILE" &
+            break
+        fi
+        sleep 2
+    done
+) &
 
 echo "--- Launching Motor Town Dedicated Server ---"
 cd "${STEAM_APP_DIR}"
 
 exec "${PROTON_EXECUTABLE_PATH}" waitforexitandrun \
     "${STEAM_APP_DIR}/MotorTown/Binaries/Win64/MotorTownServer-Win64-Shipping.exe" \
-    Jeju_World?listen -Port=7777 -QueryPort=27015 -server -log -stdout -FullStdOut -useperfthreads
+    Jeju_World?listen?bIsLanMatch=false -Port=7777 -QueryPort=27015 -multihome=0.0.0.0 -server -log -stdout -FullStdOut -NoExit -useperfthreads
 
 # Post-hook (only runs if server exits cleanly)
 source "${STEAM_HOME}/post.sh"
