@@ -31,7 +31,7 @@ if [[ -z "${STEAM_USERNAME}" || -z "${STEAM_PASSWORD}" ]]; then
     exit 1
 fi
 
-# Update game (beta branch test2 is required for dedicated server)
+# Update game (beta branch beta is required for dedicated server)
 echo "--- Updating Motor Town Dedicated Server (beta test2) ---"
 VALIDATE_FLAG=$([ "${STEAMAPPVALIDATE}" = "1" ] && echo "validate" || echo "")
 ${STEAMCMD_DIR}/steamcmd.sh \
@@ -77,8 +77,9 @@ sed -i \
     -e "s/{{ENABLE_WEB_API}}/${ENABLE_WEB_API}/g" \
     -e "s/{{WEB_API_PASSWORD}}/${WEB_API_PASSWORD}/g" \
     -e "s/{{WEB_API_PORT}}/${WEB_API_PORT}/g" \
-    "${STEAM_APP_DIR}/MotorTown/game/motortown/cfg/DedicatedServerConfig.json"
+"${STEAM_APP_DIR}/DedicatedServerConfig.json"
 
+echo "✓ Config written to correct location: ${STEAM_APP_DIR}/DedicatedServerConfig.json"
 # Force-clean the password (bypasses any sed escaping issues)
 sed -i 's/"HostWebAPIServerPassword": ".*"/"HostWebAPIServerPassword": "test123"/' "${STEAM_APP_DIR}/MotorTown/game/motortown/cfg/DedicatedServerConfig.json"
 echo "DEBUG: Password forced to test123 for testing"
