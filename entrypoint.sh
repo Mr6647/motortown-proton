@@ -41,8 +41,7 @@ ${STEAMCMD_DIR}/steamcmd.sh \
     +quit
 
 # Create config folder and copy template
-mkdir -p "${STEAM_APP_DIR}/MotorTown/game/motortown/cfg"
-cp "${STEAM_HOME}/DedicatedServerConfig_Sample.json" "${STEAM_APP_DIR}/MotorTown/game/motortown/cfg/DedicatedServerConfig.json"
+cp "${STEAM_HOME}/DedicatedServerConfig_Sample.json" "${STEAM_APP_DIR}/DedicatedServerConfig.json"
 
 # Install SLR and manually copy compatibility DLLs
 
