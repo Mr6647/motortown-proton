@@ -20,6 +20,8 @@ ENV STEAM_USER=${STEAM_USER}
 ENV STEAM_HOME=${STEAM_HOME}
 ENV STEAMCMD_DIR=${STEAMCMD_DIR}
 ENV STEAM_APP_DIR=${STEAM_APP_DIR}
+ENV STEAMCMD_USER=${STEAMCMD_USER}
+ENV STEAMCMD_PW=${STEAMCMD_PW}
 
 # URL for downloading the chosen GE-Proton release
 ENV PROTON_URL="https://github.com/GloriousEggroll/proton-ge-custom/releases/download/${PROTON_VERSION}/${PROTON_VERSION}.tar.gz"
