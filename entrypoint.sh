@@ -46,7 +46,7 @@ cp "${STEAM_HOME}/DedicatedServerConfig_Sample.json" "${STEAM_APP_DIR}/MotorTown
 
 # Install SLR and manually copy compatibility DLLs
 
-echo "--- Installing Steam Linux Runtime and copying compatibility DLLs (prevents immediate crash) ---"
+echo "--- Installing Steam Linux Runtime and copying compatibility DLLs ---"
 ${STEAMCMD_DIR}/steamcmd.sh +force_install_dir "${STEAM_APP_DIR}" +login anonymous +app_update 1007 validate +quit
 
 mkdir -p "${STEAM_APP_DIR}/MotorTown/Binaries/Win64"
@@ -105,29 +105,30 @@ mkdir -p "${STEAM_COMPAT_DATA_PATH}"
 export SteamAppId=${STEAMAPPID}
 export LD_LIBRARY_PATH="${STEAM_APP_DIR}/linux64:${LD_LIBRARY_PATH}"
 
-# Live log tailing
-echo "--- Preparing live ServerLog tail ---"
+# Logging
+echo "--- Starting real-time ServerLog forwarding to Docker stdout (visible in Dockge) ---"
 mkdir -p "${STEAM_APP_DIR}/MotorTown/Saved/ServerLog"
 
+# Background tailer that forwards game logs to container stdout
 (
-    echo "Waiting for ServerLog files..."
+    echo "Waiting for Motor Town ServerLog files to appear..."
     while true; do
         LOGFILE=$(find "${STEAM_APP_DIR}/MotorTown/Saved/ServerLog" -name "*.log" -type f 2>/dev/null | head -n 1)
         if [ -n "$LOGFILE" ]; then
-            echo "Tailing ServerLog: $LOGFILE"
-            tail -f "$LOGFILE" &
+            echo "=== Now following game log: $LOGFILE ==="
+            tail -f "$LOGFILE"
             break
         fi
         sleep 2
     done
 ) &
 
-echo "--- Launching Motor Town Dedicated Server ---"
+echo "--- Launching Motor Town Dedicated Server (public visibility + live logs) ---"
 cd "${STEAM_APP_DIR}"
 
 exec "${PROTON_EXECUTABLE_PATH}" waitforexitandrun \
     "${STEAM_APP_DIR}/MotorTown/Binaries/Win64/MotorTownServer-Win64-Shipping.exe" \
-    Jeju_World?listen?bIsLanMatch=false -Port=7777 -QueryPort=27015 -multihome=0.0.0.0 -server -log -stdout -FullStdOut -NoExit -useperfthreads
-
+    Jeju_World?listen? -server -log -stdout -FullStdOut -NoExit -useperfthreads \
+    -Port=7777 -QueryPort=27015 -multihome=0.0.0.0
 # Post-hook (only runs if server exits cleanly)
 source "${STEAM_HOME}/post.sh"
