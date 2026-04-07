@@ -12,7 +12,7 @@ if [ -n "${STEAM_APP_ID}" ]; then
     echo "--- Checking for updates (App ID: ${STEAM_APP_ID}) ---"
     ${STEAMCMD_DIR}/steamcmd.sh \
         +force_install_dir "${STEAM_APP_DIR}" \
-        +login anonymous \
+        +login "${STEAMCMD_USER}" "${STEAMCMD_PW} \
         +@sSteamCmdForcePlatformType windows \
         +app_update "${STEAM_APP_ID}" validate \
         +quit
