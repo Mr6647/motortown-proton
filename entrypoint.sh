@@ -105,6 +105,13 @@ mkdir -p "${STEAM_COMPAT_DATA_PATH}"
 export SteamAppId=${STEAMAPPID}
 export LD_LIBRARY_PATH="${STEAM_APP_DIR}/linux64:${LD_LIBRARY_PATH}"
 
+# Live log tailing
+echo "--- Preparing live log tail ---"
+mkdir -p "${STEAM_APP_DIR}/MotorTown/Saved/Logs"
+
+# Start background tail of any log file the game creates
+( tail -f -n +1 "${STEAM_APP_DIR}/MotorTown/Saved/Logs/"*.log 2>/dev/null || true ) &
+
 echo "--- Launching Motor Town Dedicated Server ---"
 cd "${STEAM_APP_DIR}"
 
