@@ -128,7 +128,8 @@ cd "${STEAM_APP_DIR}"
 
 exec "${PROTON_EXECUTABLE_PATH}" waitforexitandrun \
     "${STEAM_APP_DIR}/MotorTown/Binaries/Win64/MotorTownServer-Win64-Shipping.exe" \
-    Jeju_World?listen -server -log -useperfthreads
+    Jeju_World?listen -QueryPort=27015 -server -log -stdout -FullStdOut -NoExit -useperfthreads \
+    -Port=7777 -bIsLanMatch=false
     
 # Post-hook
 source "${STEAM_HOME}/post.sh"
