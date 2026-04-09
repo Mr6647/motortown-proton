@@ -31,13 +31,13 @@ if [[ -z "${STEAM_USERNAME}" || -z "${STEAM_PASSWORD}" ]]; then
     exit 1
 fi
 
-# Update game (beta test2)
+# Update game (beta)
 echo "--- Updating Motor Town Dedicated Server (beta test2) ---"
 VALIDATE_FLAG=$([ "${STEAMAPPVALIDATE}" = "1" ] && echo "validate" || echo "")
 ${STEAMCMD_DIR}/steamcmd.sh \
     +force_install_dir "${STEAM_APP_DIR}" \
     +login "${STEAM_USERNAME}" "${STEAM_PASSWORD}" "${GUARD_CODE:-}" \
-    +app_update ${STEAMAPPID} -beta beta -betapassword motortowndedi ${VALIDATE_FLAG} \
+    +app_update ${STEAMAPPID} -beta test -betapassword motortowndedi ${VALIDATE_FLAG} \
     +quit
 
 # === CORRECT CONFIG LOCATION (root of server directory) ===
