@@ -24,6 +24,18 @@ echo "=== Motor Town Dedicated Server (Proton GE) ==="
 : ${WEB_API_PORT:=8080}
 : ${MT_CFG_URL:=""}
 
+# Public IP for Steam master server registration.
+# Set SERVER_PUBLIC_IP explicitly in your environment/compose if auto-detection
+# returns the wrong address (e.g. behind a NAT or on a multi-homed host).
+if [[ -z "${SERVER_PUBLIC_IP}" ]]; then
+    SERVER_PUBLIC_IP=$(curl -sf https://api.ipify.org || true)
+fi
+if [[ -n "${SERVER_PUBLIC_IP}" ]]; then
+    echo "Steam MULTIHOME: ${SERVER_PUBLIC_IP}"
+else
+    echo "Warning: Could not determine public IP — Steam server browser may not work"
+fi
+
 # === REQUIRED: Steam account credentials ===
 if [[ -z "${STEAM_USERNAME}" || -z "${STEAM_PASSWORD}" ]]; then
     echo "ERROR: STEAM_USERNAME and STEAM_PASSWORD environment variables are required."
@@ -126,10 +138,15 @@ mkdir -p "${STEAM_APP_DIR}/MotorTown/Saved/ServerLog"
 echo "--- Launching Motor Town Dedicated Server ---"
 cd "${STEAM_APP_DIR}"
 
+MULTIHOME_ARG=""
+if [[ -n "${SERVER_PUBLIC_IP}" ]]; then
+    MULTIHOME_ARG="-MULTIHOME=${SERVER_PUBLIC_IP}"
+fi
+
 exec "${PROTON_EXECUTABLE_PATH}" waitforexitandrun \
     "${STEAM_APP_DIR}/MotorTown/Binaries/Win64/MotorTownServer-Win64-Shipping.exe" \
     Jeju_World?listen?Port=7777?QueryPort=27015 -server -log -stdout -FullStdOut -NoExit -useperfthreads \
-    -bIsLanMatch=false
-    
+    -bIsLanMatch=false ${MULTIHOME_ARG}
+
 # Post-hook
 source "${STEAM_HOME}/post.sh"
