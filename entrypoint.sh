@@ -48,6 +48,7 @@ echo "--- Updating Motor Town Dedicated Server (beta test2) ---"
 VALIDATE_FLAG=$([ "${STEAMAPPVALIDATE}" = "1" ] && echo "validate" || echo "")
 ${STEAMCMD_DIR}/steamcmd.sh \
     +force_install_dir "${STEAM_APP_DIR}" \
+    +@sSteamCmdForcePlatformType windows \
     +login "${STEAM_USERNAME}" "${STEAM_PASSWORD}" "${GUARD_CODE:-}" \
     +app_update ${STEAMAPPID} -beta test -betapassword motortowndedi ${VALIDATE_FLAG} \
     +quit
@@ -79,28 +80,16 @@ sed -i \
 
 echo "✓ Config written to correct location: ${STEAM_APP_DIR}/DedicatedServerConfig.json"
 
-# Install Steam Linux Runtime
-echo "--- Installing Steam Linux Runtime ---"
-${STEAMCMD_DIR}/steamcmd.sh +force_install_dir "${STEAM_APP_DIR}" +login anonymous +app_update 1007 validate +quit
-
-# Set up steamclient symlinks so Proton's bridge can find the SDK libraries.
-# Do NOT copy Linux .so files as .dll — Wine/Proton cannot load ELF binaries as
-# Windows DLLs and doing so breaks Steam master server registration silently.
-echo "--- Setting up Steam SDK symlinks for Proton ---"
-mkdir -p "$HOME/.steam/sdk64" "$HOME/.steam/sdk32"
-if [ -f "${STEAMCMD_DIR}/linux64/steamclient.so" ]; then
-    ln -sf "${STEAMCMD_DIR}/linux64/steamclient.so" "$HOME/.steam/sdk64/steamclient.so"
-    echo "Linked sdk64/steamclient.so"
-fi
-if [ -f "${STEAMCMD_DIR}/linux32/steamclient.so" ]; then
-    ln -sf "${STEAMCMD_DIR}/linux32/steamclient.so" "$HOME/.steam/sdk32/steamclient.so"
-    echo "Linked sdk32/steamclient.so"
-fi
+# Sweep all Windows DLLs from the server tree into Binaries/Win64/ so UE4 can
+# find steam_api64.dll and friends adjacent to the executable at runtime.
+echo "--- Sweeping DLLs into Binaries/Win64/ ---"
+mkdir -p "${STEAM_APP_DIR}/MotorTown/Binaries/Win64"
+find "${STEAM_APP_DIR}" -type f -name "*.dll" \
+    ! -path "${STEAM_APP_DIR}/MotorTown/Binaries/Win64/*" \
+    -exec cp {} "${STEAM_APP_DIR}/MotorTown/Binaries/Win64/" \;
+echo "✓ DLL sweep complete"
 
 # Write steam_appid.txt so SteamGameServerInit can find the AppID.
-# Without this, shipping builds silently fail to register with Steam master servers.
-echo "--- Writing steam_appid.txt ---"
-mkdir -p "${STEAM_APP_DIR}/MotorTown/Binaries/Win64"
 echo "${STEAMAPPID}" > "${STEAM_APP_DIR}/MotorTown/Binaries/Win64/steam_appid.txt"
 echo "✓ steam_appid.txt written (AppID: ${STEAMAPPID})"
 
@@ -123,7 +112,6 @@ fi
 source "${STEAM_HOME}/pre.sh"
 
 # Proton environment
-export STEAM_COMPAT_CLIENT_INSTALL_PATH="${STEAMCMD_DIR}"
 export STEAM_COMPAT_DATA_PATH="${STEAMCMD_DIR}/compatdata/${STEAMAPPID}"
 mkdir -p "${STEAM_COMPAT_DATA_PATH}"
 export SteamAppId=${STEAMAPPID}
