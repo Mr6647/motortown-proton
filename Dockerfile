@@ -13,20 +13,29 @@ ARG STEAM_USER_UID=1000
 ARG STEAM_USER_GID=1000
 ARG STEAMCMD_DIR="${STEAM_HOME}/steamcmd"
 ARG STEAM_APP_DIR="${STEAM_HOME}/server"
-ARG PROTON_DIR="${STEAM_HOME}/proton"
 ARG PROTON_VERSION="GE-Proton10-28"
+# Proton lives inside a Steam-like compatibilitytools.d structure so Proton's
+# internal scripts can resolve sibling paths correctly (mirrors real Steam layout).
+ARG STEAM_CLIENT_DIR="${STEAM_HOME}/.steam/steam"
+ARG PROTON_DIR="${STEAM_CLIENT_DIR}/compatibilitytools.d/GE-Proton10-28"
 
 # Runtime environment variables derived from build args
 ENV STEAM_USER=${STEAM_USER}
 ENV STEAM_HOME=${STEAM_HOME}
 ENV STEAMCMD_DIR=${STEAMCMD_DIR}
 ENV STEAM_APP_DIR=${STEAM_APP_DIR}
-
-# URL for downloading the chosen GE-Proton release
-ENV PROTON_URL="https://github.com/GloriousEggroll/proton-ge-custom/releases/download/${PROTON_VERSION}/${PROTON_VERSION}.tar.gz"
 ENV PROTON_VERSION=${PROTON_VERSION}
 ENV PROTON_DIR=${PROTON_DIR}
 ENV PROTON_EXECUTABLE_PATH="${PROTON_DIR}/proton"
+
+# Point Proton at the Steam-like directory so it resolves its own runtime paths.
+ENV STEAM_COMPAT_CLIENT_INSTALL_PATH="${STEAM_HOME}/.steam/steam"
+
+# Disable ULWGL game-specific compatibility patches (they can break server mode).
+ENV ULWGL_ID=0
+
+# URL for downloading the chosen GE-Proton release
+ENV PROTON_URL="https://github.com/GloriousEggroll/proton-ge-custom/releases/download/${PROTON_VERSION}/${PROTON_VERSION}.tar.gz"
 
 # Set locale environment variables
 ENV LANG=en_US.UTF-8
@@ -79,14 +88,12 @@ RUN mkdir -p ${STEAM_HOME}/.steam/sdk64 \
     && mkdir -p ${STEAM_HOME}/.steam/sdk32 \
     && ln -sf ${STEAMCMD_DIR}/linux64/steamclient.so ${STEAM_HOME}/.steam/sdk64/steamclient.so \
     && ln -sf ${STEAMCMD_DIR}/linux32/steamclient.so ${STEAM_HOME}/.steam/sdk32/steamclient.so \
-    # Some servers look for steamservice.so; point it to the steamclient provided by SteamCMD
     && ln -sf ${STEAMCMD_DIR}/linux64/steamclient.so ${STEAM_HOME}/.steam/sdk64/steamservice.so \
     && ln -sf ${STEAMCMD_DIR}/linux32/steamclient.so ${STEAM_HOME}/.steam/sdk32/steamservice.so \
-    # Provide the expected bin paths used by some game installers
     && ln -sf ${STEAMCMD_DIR}/linux64 ${STEAM_HOME}/.steam/bin64 \
     && ln -sf ${STEAMCMD_DIR}/linux32 ${STEAM_HOME}/.steam/bin32
 
-# Download and unpack the specified GE-Proton release into the Proton directory
+# Download and unpack GE-Proton into compatibilitytools.d/ (mirrors real Steam layout)
 RUN mkdir -p ${PROTON_DIR} \
     && wget -qO- ${PROTON_URL} | tar -xz --strip-components=1 -C ${PROTON_DIR}
 
