@@ -79,20 +79,30 @@ sed -i \
 
 echo "✓ Config written to correct location: ${STEAM_APP_DIR}/DedicatedServerConfig.json"
 
-# Install Steam Linux Runtime and copy compatibility DLLs
-echo "--- Installing Steam Linux Runtime and copying compatibility DLLs ---"
+# Install Steam Linux Runtime
+echo "--- Installing Steam Linux Runtime ---"
 ${STEAMCMD_DIR}/steamcmd.sh +force_install_dir "${STEAM_APP_DIR}" +login anonymous +app_update 1007 validate +quit
 
+# Set up steamclient symlinks so Proton's bridge can find the SDK libraries.
+# Do NOT copy Linux .so files as .dll — Wine/Proton cannot load ELF binaries as
+# Windows DLLs and doing so breaks Steam master server registration silently.
+echo "--- Setting up Steam SDK symlinks for Proton ---"
+mkdir -p "$HOME/.steam/sdk64" "$HOME/.steam/sdk32"
+if [ -f "${STEAMCMD_DIR}/linux64/steamclient.so" ]; then
+    ln -sf "${STEAMCMD_DIR}/linux64/steamclient.so" "$HOME/.steam/sdk64/steamclient.so"
+    echo "Linked sdk64/steamclient.so"
+fi
+if [ -f "${STEAMCMD_DIR}/linux32/steamclient.so" ]; then
+    ln -sf "${STEAMCMD_DIR}/linux32/steamclient.so" "$HOME/.steam/sdk32/steamclient.so"
+    echo "Linked sdk32/steamclient.so"
+fi
+
+# Write steam_appid.txt so SteamGameServerInit can find the AppID.
+# Without this, shipping builds silently fail to register with Steam master servers.
+echo "--- Writing steam_appid.txt ---"
 mkdir -p "${STEAM_APP_DIR}/MotorTown/Binaries/Win64"
-for dll in steamclient.dll steamclient64.dll tier0_s.dll tier0_s64.dll vstdlib_s.dll vstdlib_s64.dll; do
-    src_so="${STEAMCMD_DIR}/linux32/${dll%.dll}.so"
-    if [ -f "$src_so" ]; then
-        cp "$src_so" "${STEAM_APP_DIR}/MotorTown/Binaries/Win64/${dll}"
-        echo "Copied ${dll}"
-    else
-        echo "Warning: Could not find ${dll} source"
-    fi
-done
+echo "${STEAMAPPID}" > "${STEAM_APP_DIR}/MotorTown/Binaries/Win64/steam_appid.txt"
+echo "✓ steam_appid.txt written (AppID: ${STEAMAPPID})"
 
 # Custom config bundle support
 if [[ -n "${MT_CFG_URL}" ]]; then
@@ -145,8 +155,8 @@ fi
 
 exec "${PROTON_EXECUTABLE_PATH}" waitforexitandrun \
     "${STEAM_APP_DIR}/MotorTown/Binaries/Win64/MotorTownServer-Win64-Shipping.exe" \
-    Jeju_World?listen?Port=7777?QueryPort=27015 -server -log -stdout -FullStdOut -NoExit -useperfthreads \
-    -bIsLanMatch=false ${MULTIHOME_ARG}
+    Jeju_World?listen -server -log -stdout -FullStdOut -NoExit -useperfthreads \
+    -port=7777 -queryport=27015 ${MULTIHOME_ARG}
 
 # Post-hook
 source "${STEAM_HOME}/post.sh"
